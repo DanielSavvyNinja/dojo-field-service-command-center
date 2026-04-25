@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans antialiased;
+  }
+}
+
+@layer components {
+  .job-card {
+    @apply bg-white rounded-lg border border-gray-200 p-3 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow;
+  }
+  .tech-column {
+    @apply flex-1 min-w-[220px] bg-gray-50 rounded-lg border border-gray-200;
+  }
+  .time-slot {
+    @apply min-h-[60px] border-b border-gray-100 relative;
+  }
+  .time-slot:hover {
+    @apply bg-blue-50/50;
+  }
+  .btn-primary {
+    @apply bg-dojo-600 text-white px-4 py-2 rounded-lg hover:bg-dojo-700 transition-colors font-medium text-sm;
+  }
+  .btn-secondary {
+    @apply bg-white text-gray-700 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors font-medium text-sm;
+  }
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+}
