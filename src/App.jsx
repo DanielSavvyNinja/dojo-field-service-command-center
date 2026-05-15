@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import { format, addDays, startOfWeek, isSameDay, parseISO, setHours, setMinutes } from 'date-fns'
 import { Calendar, Clock, MapPin, Phone, User, Plus, ChevronLeft, ChevronRight, Filter, LayoutGrid, Map, List, Settings, Bell, Search, MoreVertical, GripVertical, CheckCircle2, AlertCircle, Wrench, Home, Truck } from 'lucide-react'
 
@@ -237,47 +237,71 @@ function NewJobModal({ isOpen, onClose, onSave, techs, selectedDate }) {
 }
 
 function JobDetailModal({ job, isOpen, onClose, onUpdate, techs }) {
-  if (!isOpen || !job) return null
-  const service = SERVICE_TYPES[job.serviceType]
-  const tech = TECHNICIANS.find(t => t.id === job.techId)
-  const status = JOB_STATUSES[job.status]
-
+  const [editJob, setEditJob] = useState(job)
+  useEffect(() => { setEditJob(job) }, [job?.id])
+  if (!isOpen || !job || !editJob) return null
+  const status = JOB_STATUSES[editJob.status]
+  const update = (patch) => setEditJob({ ...editJob, ...patch })
+  const handleSave = () => {
+    const newStatus = (editJob.techId && editJob.status === 'unscheduled') ? 'scheduled' : editJob.status
+    onUpdate({ ...editJob, status: newStatus })
+    onClose()
+  }
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-200 flex items-start justify-between">
-          <div>
-            <h2 className="text-lg font-bold">{job.customerName}</h2>
-            <div className="text-sm text-gray-500 flex items-center gap-1 mt-1"><MapPin size={14} /> {job.address}, {job.city}</div>
-          </div>
+          <input className="text-lg font-bold flex-1 border-b border-gray-200 focus:border-blue-500 focus:outline-none mr-4" value={editJob.customerName || ''} onChange={e => update({ customerName: e.target.value })} placeholder="Customer name" />
           <span className={`badge ${status.color}`}>{status.label}</span>
         </div>
-        <div className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div><span className="text-gray-500">Service:</span><br/><strong>{service?.icon} {service?.label}</strong></div>
-            <div><span className="text-gray-500">Price:</span><br/><strong className="text-green-600">${service?.price}</strong></div>
-            <div><span className="text-gray-500">Duration:</span><br/><strong>{service?.duration} min</strong></div>
-            <div><span className="text-gray-500">Time:</span><br/><strong>{job.startTime || 'Not set'}</strong></div>
-            <div><span className="text-gray-500">Phone:</span><br/><strong>{job.phone}</strong></div>
-            <div><span className="text-gray-500">Property:</span><br/><strong>{job.propertyType}</strong></div>
-            <div><span className="text-gray-500">Technician:</span><br/><strong>{tech ? tech.name : 'Unassigned'}</strong></div>
-            <div><span className="text-gray-500">Date:</span><br/><strong>{job.date}</strong></div>
+        <div className="p-6 space-y-3">
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <label className="block"><span className="text-gray-500">Service</span>
+              <select className="w-full border rounded px-2 py-1 mt-1" value={editJob.serviceType} onChange={e => update({ serviceType: e.target.value })}>
+                {Object.entries(SERVICE_TYPES).map(([k, s]) => <option key={k} value={k}>{s.label}</option>)}
+              </select>
+            </label>
+            <label className="block"><span className="text-gray-500">Technician</span>
+              <select className="w-full border rounded px-2 py-1 mt-1" value={editJob.techId || ''} onChange={e => update({ techId: e.target.value || null })}>
+                <option value="">— Unassigned —</option>
+                {TECHNICIANS.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </label>
+            <label className="block"><span className="text-gray-500">Date</span>
+              <input type="date" className="w-full border rounded px-2 py-1 mt-1" value={editJob.date || ''} onChange={e => update({ date: e.target.value })} />
+            </label>
+            <label className="block"><span className="text-gray-500">Time</span>
+              <input type="time" className="w-full border rounded px-2 py-1 mt-1" value={editJob.startTime || ''} onChange={e => update({ startTime: e.target.value })} />
+            </label>
+            <label className="block"><span className="text-gray-500">Phone</span>
+              <input className="w-full border rounded px-2 py-1 mt-1" value={editJob.phone || ''} onChange={e => update({ phone: e.target.value })} />
+            </label>
+            <label className="block"><span className="text-gray-500">Property</span>
+              <input className="w-full border rounded px-2 py-1 mt-1" value={editJob.propertyType || ''} onChange={e => update({ propertyType: e.target.value })} />
+            </label>
+            <label className="block col-span-2"><span className="text-gray-500">Address</span>
+              <input className="w-full border rounded px-2 py-1 mt-1" value={editJob.address || ''} onChange={e => update({ address: e.target.value })} />
+            </label>
+            <label className="block col-span-2"><span className="text-gray-500">City</span>
+              <input className="w-full border rounded px-2 py-1 mt-1" value={editJob.city || ''} onChange={e => update({ city: e.target.value })} />
+            </label>
+            <label className="block col-span-2"><span className="text-gray-500">Notes</span>
+              <textarea rows={2} className="w-full border rounded px-2 py-1 mt-1" value={editJob.notes || ''} onChange={e => update({ notes: e.target.value })} />
+            </label>
           </div>
-          {job.notes && <div className="bg-gray-50 rounded-lg p-3 text-sm"><span className="text-gray-500">Notes:</span><br/>{job.notes}</div>}
-
-          <div className="flex gap-2 flex-wrap">
-            <label className="text-sm font-medium text-gray-700 w-full">Update Status:</label>
-            {Object.entries(JOB_STATUSES).filter(([k]) => k !== 'unscheduled').map(([key, s]) => (
-              <button key={key} className={`badge ${job.status === key ? s.color + ' ring-2 ring-offset-1 ring-gray-400' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'} cursor-pointer`}
-                onClick={() => onUpdate({ ...job, status: key })}>
-                {s.label}
-              </button>
+          <div className="flex gap-2 flex-wrap pt-2 border-t">
+            <span className="text-sm font-medium text-gray-700 w-full">Status</span>
+            {Object.entries(JOB_STATUSES).map(([key, s]) => (
+              <button key={key} className={`badge ${editJob.status === key ? s.color + ' ring-2 ring-offset-1 ring-gray-400' : 'bg-gray-100 text-gray-700'}`} onClick={() => update({ status: key })}>{s.label}</button>
             ))}
           </div>
         </div>
         <div className="p-6 border-t border-gray-200 flex justify-between">
           <button className="text-sm text-red-500 hover:text-red-700">Delete Job</button>
-          <button className="btn-primary" onClick={onClose}>Close</button>
+          <div className="flex gap-2">
+            <button className="text-sm text-gray-600 hover:text-gray-900" onClick={onClose}>Cancel</button>
+            <button className="btn-primary" onClick={handleSave}>Save Changes</button>
+          </div>
         </div>
       </div>
     </div>
